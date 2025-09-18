@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alumni.back.chapter.ChapterApplicationMapper">
+
+    <insert id="insert" parameterType="com.alumni.back.Entity.ChapterApplication">
+        INSERT INTO chapter_application (id, tag_id, alumni_id, status, apply_time, review_time)
+        VALUES (#{id}, #{tagId}, #{alumniId}, #{status}, #{applyTime}, #{reviewTime})
+    </insert>
+
+    <update id="updateById" parameterType="com.alumni.back.Entity.ChapterApplication">
+        UPDATE chapter_application 
+        SET status = #{status}, review_time = #{reviewTime}
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" resultType="com.alumni.back.Entity.ChapterApplication">
+        SELECT id, tag_id, alumni_id, status, apply_time, review_time
+        FROM chapter_application 
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAllApplications" resultType="map">
+        SELECT 
+            ca.id,
+            ca.tag_id,
+            ca.alumni_id,
+            ca.status,
+            ca.apply_time,
+            ca.review_time,
+            t.name AS branch_name,
+            a.chinese_name AS applicant_name,
+            c.alumni_id AS creator_id,
+            creator.chinese_name AS creator_name
+        FROM chapter_application ca
+        LEFT JOIN tag t ON ca.tag_id = t.id
+        LEFT JOIN alumnus a ON ca.alumni_id = a.alumni_id
+        LEFT JOIN chapter c ON ca.tag_id = c.tag_id
+        LEFT JOIN alumnus creator ON c.alumni_id = creator.alumni_id
+        ORDER BY ca.apply_time DESC
+    </select>
+
+    <select id="selectMyApplications" resultType="map">
+        SELECT 
+            ca.id,
+            ca.tag_id,
+            ca.alumni_id,
+            ca.status,
+            ca.apply_time,
+            ca.review_time,
+            t.name AS branch_name,
+            a.chinese_name AS applicant_name,
+            c.alumni_id AS creator_id,
+            creator.chinese_name AS creator_name
+        FROM chapter_application ca
+        LEFT JOIN tag t ON ca.tag_id = t.id
+        LEFT JOIN alumnus a ON ca.alumni_id = a.alumni_id
+        LEFT JOIN chapter c ON ca.tag_id = c.tag_id
+        LEFT JOIN alumnus creator ON c.alumni_id = creator.alumni_id
+        WHERE ca.alumni_id = #{alumniId}
+        ORDER BY ca.apply_time DESC
+    </select>
+
+    <select id="selectChapterApplications" resultType="map">
+        SELECT 
+            ca.id,
+            ca.tag_id,
+            ca.alumni_id,
+            ca.status,
+            ca.apply_time,
+            ca.review_time,
+            t.name AS branch_name,
+            a.chinese_name AS applicant_name,
+            c.alumni_id AS creator_id,
+            creator.chinese_name AS creator_name
+        FROM chapter_application ca
+        LEFT JOIN tag t ON ca.tag_id = t.id
+        LEFT JOIN alumnus a ON ca.alumni_id = a.alumni_id
+        LEFT JOIN chapter c ON ca.tag_id = c.tag_id
+        LEFT JOIN alumnus creator ON c.alumni_id = creator.alumni_id
+        WHERE ca.tag_id = #{tagId}
+        ORDER BY ca.apply_time DESC
+    </select>
+
+    <select id="selectLatestApplication" resultType="com.alumni.back.Entity.ChapterApplication">
+        SELECT id, tag_id, alumni_id, status, apply_time, review_time
+        FROM chapter_application 
+        WHERE tag_id = #{tagId} AND alumni_id = #{alumniId}
+        ORDER BY apply_time DESC 
+        LIMIT 1
+    </select>
+
+    <delete id="deleteByTagId" parameterType="java.lang.Integer">
+        DELETE FROM chapter_application WHERE tag_id = #{tagId}
+    </delete>
+
+</mapper> 

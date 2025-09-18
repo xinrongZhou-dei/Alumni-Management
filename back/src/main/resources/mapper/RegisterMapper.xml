@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alumni.back.register.RegisterMapper">
+
+  <resultMap id="AlumniResultMap" type="com.alumni.back.Entity.Alumni">
+    <result property="alumniId" column="alumni_id"/>
+    <result property="salutation" column="salutation"/>
+    <result property="firstName" column="first_name"/>
+    <result property="lastName" column="last_name"/>
+    <result property="chineseName" column="chinese_name"/>
+    <result property="email" column="email"/>
+    <result property="contactNumber" column="contact_number"/>
+    <result property="wechatId" column="wechat_id"/>
+    <result property="correspondenceAddress" column="correspondence_address"/>
+    <result property="currentLocation" column="current_location"/>
+    <result property="zohoAlumniNumber" column="zoho_alumni_number"/>
+    <result property="affiliation" column="affiliation"/>
+    <result property="ycywSchoolsAttended" column="ycyw_schools_attended"/>
+    <result property="studyPeriodStart" column="study_period_start"/>
+    <result property="studyPeriodEnd" column="study_period_end"/>
+    <result property="lastSchoolDay" column="last_school_day"/>
+    <result property="yearLeft" column="year_left"/>
+    <result property="maritalStatus" column="marital_status"/>
+    <result property="showYearLeft" column="show_year_left"/>
+    <result property="showTertiaryUniversity" column="show_tertiary_university"/>
+    <result property="showTertiaryMajor" column="show_tertiary_major"/>
+    <result property="showCareerCompany" column="show_career_company"/>
+    <result property="showJobTitle" column="show_job_title"/>
+    <result property="showIndustry" column="show_industry"/>
+    <result property="showCountry" column="show_country"/>
+    <result property="password" column="password"/>
+    <result property="updateTime" column="update_time"/>
+    <result property="role" column="role"/>
+    <result property="tagIds" column="tag_ids"/>
+    <result property="region" column="region"/>
+    <result property="state" column="state"/>
+    <result property="birthday" column="birthday"/>
+  </resultMap>
+
+  <resultMap id="TertiaryInformationResultMap" type="com.alumni.back.Entity.TertiaryInformation">
+    <result property="id" column="id"/>
+    <result property="alumniId" column="alumni_id"/>
+    <result property="universityCollege" column="university_college"/>
+    <result property="degree" column="degree"/>
+    <result property="major" column="major"/>
+    <result property="graduationYear" column="graduation_year"/>
+    <result property="countryRegion" column="country_region"/>
+  </resultMap>
+
+  <resultMap id="CareerInformationResultMap" type="com.alumni.back.Entity.CareerInformation">
+    <result property="id" column="id"/>
+    <result property="alumniId" column="alumni_id"/>
+    <result property="companyOrganization" column="company_organization"/>
+    <result property="jobTitle" column="job_title"/>
+    <result property="industry" column="industry" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+    <result property="countryRegion" column="country_region"/>
+  </resultMap>
+
+  <select id="selectAlumniList" resultType="com.alumni.back.Entity.Alumni">
+    SELECT
+      alumni_id as alumniId,
+      salutation,
+      first_name as firstName,
+      last_name as lastName,
+      chinese_name as chineseName,
+      email,
+      contact_number as contactNumber,
+      wechat_id as wechatId,
+      correspondence_address as correspondenceAddress,
+      current_location as currentLocation,
+      zoho_alumni_number as zohoAlumniNumber,
+      affiliation,
+      ycyw_schools_attended as ycywSchoolsAttended,
+      study_period_start as studyPeriodStart,
+      study_period_end as studyPeriodEnd,
+      last_school_day as lastSchoolDay,
+      year_left as yearLeft,
+      marital_status as maritalStatus,
+      show_year_left as showYearLeft,
+      show_tertiary_university as showTertiaryUniversity,
+      show_tertiary_major as showTertiaryMajor,
+      show_career_company as showCareerCompany,
+      show_job_title as showJobTitle,
+      show_industry as showIndustry,
+      show_country as showCountry,
+      password,
+      update_time as updateTime,
+      role,
+      tag_ids as tagIds,
+      region,
+      state,
+      birthday
+    FROM alumnus
+    <where>
+      <!-- 只查询state为0或1的校友，不查询state为2的校友 -->
+      <choose>
+        <when test="stateList != null and stateList.size() > 0">
+          AND state IN
+          <foreach collection="stateList" item="st" open="(" separator="," close=")">
+            #{st}
+          </foreach>
+        </when>
+        <otherwise>
+          AND (state = 0 OR state = 1)
+        </otherwise>
+      </choose>
+      
+      <if test="alumniId != null and alumniId != ''">
+        AND alumni_id LIKE CONCAT('%', #{alumniId}, '%')
+      </if>
+      <if test="ycywSchoolsAttended != null and ycywSchoolsAttended != ''">
+        AND ycyw_schools_attended LIKE CONCAT('%', #{ycywSchoolsAttended}, '%')
+      </if>
+      <if test="chineseName != null and chineseName != ''">
+        AND chinese_name LIKE CONCAT('%', #{chineseName}, '%')
+      </if>
+      <if test="email != null and email != ''">
+        AND email LIKE CONCAT('%', #{email}, '%')
+      </if>
+      <if test="contactNumber != null and contactNumber != ''">
+        AND contact_number LIKE CONCAT('%', #{contactNumber}, '%')
+      </if>
+      <if test="tagIds != null and tagIds != ''">
+        AND tag_ids LIKE CONCAT('%', #{tagIds}, '%')
+      </if>
+      <if test="tagIdsList != null and tagIdsList.size() > 0">
+        AND (
+          <foreach collection="tagIdsList" item="tagId" separator=" OR ">
+            tag_ids LIKE CONCAT('%', #{tagId}, '%')
+          </foreach>
+        )
+      </if>
+      
+      <!-- 无论权限级别，只要accessibleSchools有值，就都要根据学校过滤 -->
+      <if test="accessibleSchools != null and accessibleSchools != ''">
+        AND (
+          <foreach collection="accessibleSchools.split(',')" item="school" separator=" OR " open="" close="">
+            <if test="school != null and school != ''">
+              ycyw_schools_attended LIKE CONCAT('%', #{school}, '%')
+            </if>
+          </foreach>
+          <!-- 处理中文分号的情况 -->
+          OR (
+            <foreach collection="accessibleSchools.split('；')" item="school" separator=" OR " open="" close="">
+              <if test="school != null and school != ''">
+                ycyw_schools_attended LIKE CONCAT('%', #{school}, '%')
+              </if>
+            </foreach>
+          )
+        )
+      </if>
+      
+      <!-- 权限为0的管理员不能看到任何校友信息 -->
+      <if test="permissionLevel != null and permissionLevel == 0">
+        AND 1=0
+      </if>
+    </where>
+    ORDER BY update_time DESC
+    LIMIT #{offset}, #{pageSize}
+  </select>
+
+  <select id="countAlumniList" resultType="java.lang.Integer">
+    SELECT COUNT(*)
+    FROM alumnus
+    <where>
+      <!-- 只查询state为0或1的校友，不查询state为2的校友 -->
+      <choose>
+        <when test="stateList != null and stateList.size() > 0">
+          AND state IN
+          <foreach collection="stateList" item="st" open="(" separator="," close=")">
+            #{st}
+          </foreach>
+        </when>
+        <otherwise>
+          AND (state = 0 OR state = 1)
+        </otherwise>
+      </choose>
+      
+      <if test="alumniId != null and alumniId != ''">
+        AND alumni_id LIKE CONCAT('%', #{alumniId}, '%')
+      </if>
+      <if test="ycywSchoolsAttended != null and ycywSchoolsAttended != ''">
+        AND ycyw_schools_attended LIKE CONCAT('%', #{ycywSchoolsAttended}, '%')
+      </if>
+      <if test="chineseName != null and chineseName != ''">
+        AND chinese_name LIKE CONCAT('%', #{chineseName}, '%')
+      </if>
+      <if test="email != null and email != ''">
+        AND email LIKE CONCAT('%', #{email}, '%')
+      </if>
+      <if test="contactNumber != null and contactNumber != ''">
+        AND contact_number LIKE CONCAT('%', #{contactNumber}, '%')
+      </if>
+      <if test="tagIds != null and tagIds != ''">
+        AND tag_ids LIKE CONCAT('%', #{tagIds}, '%')
+      </if>
+      <if test="tagIdsList != null and tagIdsList.size() > 0">
+        AND (
+          <foreach collection="tagIdsList" item="tagId" separator=" OR ">
+            tag_ids LIKE CONCAT('%', #{tagId}, '%')
+          </foreach>
+        )
+      </if>
+      
+      <!-- 无论权限级别，只要accessibleSchools有值，就都要根据学校过滤 -->
+      <if test="accessibleSchools != null and accessibleSchools != ''">
+        AND (
+          <foreach collection="accessibleSchools.split(',')" item="school" separator=" OR " open="" close="">
+            <if test="school != null and school != ''">
+              ycyw_schools_attended LIKE CONCAT('%', #{school}, '%')
+            </if>
+          </foreach>
+          <!-- 处理中文分号的情况 -->
+          OR (
+            <foreach collection="accessibleSchools.split('；')" item="school" separator=" OR " open="" close="">
+              <if test="school != null and school != ''">
+                ycyw_schools_attended LIKE CONCAT('%', #{school}, '%')
+              </if>
+            </foreach>
+          )
+        )
+      </if>
+      
+      <!-- 权限为0的管理员不能看到任何校友信息 -->
+      <if test="permissionLevel != null and permissionLevel == 0">
+        AND 1=0
+      </if>
+    </where>
+  </select>
+
+  <insert id="insertCareerInfo" parameterType="com.alumni.back.Entity.CareerInformation">
+    INSERT INTO carrer_information (id, alumni_id, company_organization, job_title, industry, country_region)
+    VALUES (#{id}, #{alumniId}, #{companyOrganization}, #{jobTitle}, #{industry,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, #{countryRegion})
+  </insert>
+
+  <update id="updateCareerInfo" parameterType="com.alumni.back.Entity.CareerInformation">
+    UPDATE carrer_information
+    SET company_organization = #{companyOrganization},
+        job_title = #{jobTitle},
+        industry = #{industry,typeHandler=org.apache.ibatis.type.EnumTypeHandler},
+        country_region = #{countryRegion}
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteTertiaryById">
+    DELETE FROM tertiary_information WHERE id = #{id}
+  </delete>
+
+  <delete id="deleteCareerById">
+    DELETE FROM carrer_information WHERE id = #{id}
+  </delete>
+
+  <select id="batchSelectFields" resultType="map">
+    SELECT
+    <foreach collection="fields" item="field" separator=",">
+        ${field}
+    </foreach>
+    , alumni_id
+    FROM alumnus
+    WHERE alumni_id IN
+    <foreach collection="alumniIds" item="id" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+  </select>
+
+  <update id="updateAlumniById" parameterType="com.alumni.back.Entity.Alumni">
+    UPDATE alumnus
+    SET
+      <if test="salutation != null and salutation != ''">
+        salutation = #{salutation},
+      </if>
+      <if test="firstName != null and firstName != ''">
+        first_name = #{firstName},
+      </if>
+      <if test="lastName != null and lastName != ''">
+        last_name = #{lastName},
+      </if>
+      <if test="chineseName != null and chineseName != ''">
+        chinese_name = #{chineseName},
+      </if>
+      <if test="contactNumber != null and contactNumber != ''">
+        contact_number = #{contactNumber},
+      </if>
+      <if test="wechatId != null and wechatId != ''">
+        wechat_id = #{wechatId},
+      </if>
+      <if test="correspondenceAddress != null and correspondenceAddress != ''">
+        correspondence_address = #{correspondenceAddress},
+      </if>
+      <if test="currentLocation != null and currentLocation != ''">
+        current_location = #{currentLocation},
+      </if>
+      <if test="zohoAlumniNumber != null and zohoAlumniNumber != ''">
+        zoho_alumni_number = #{zohoAlumniNumber},
+      </if>
+      <if test="affiliation != null and affiliation != ''">
+        affiliation = #{affiliation},
+      </if>
+      <if test="ycywSchoolsAttended != null and ycywSchoolsAttended != ''">
+        ycyw_schools_attended = #{ycywSchoolsAttended},
+      </if>
+      <if test="studyPeriodStart != null and studyPeriodStart != ''">
+        study_period_start = #{studyPeriodStart},
+      </if>
+      <if test="studyPeriodEnd != null and studyPeriodEnd != ''">
+        study_period_end = #{studyPeriodEnd},
+      </if>
+      <if test="lastSchoolDay != null and lastSchoolDay != ''">
+        last_school_day = #{lastSchoolDay},
+      </if>
+      <if test="yearLeft != null">
+        year_left = #{yearLeft},
+      </if>
+      <if test="maritalStatus != null and maritalStatus != ''">
+        marital_status = #{maritalStatus},
+      </if>
+      <if test="showYearLeft != null">
+        show_year_left = #{showYearLeft},
+      </if>
+      <if test="showTertiaryUniversity != null">
+        show_tertiary_university = #{showTertiaryUniversity},
+      </if>
+      <if test="showTertiaryMajor != null">
+        show_tertiary_major = #{showTertiaryMajor},
+      </if>
+      <if test="showCareerCompany != null">
+        show_career_company = #{showCareerCompany},
+      </if>
+      <if test="showJobTitle != null">
+        show_job_title = #{showJobTitle},
+      </if>
+      <if test="showIndustry != null">
+        show_industry = #{showIndustry},
+      </if>
+      <if test="showCountry != null">
+        show_country = #{showCountry},
+      </if>
+      <if test="email != null and email != ''">
+        email = #{email},
+      </if>
+      <if test="password != null and password != ''">
+        password = #{password},
+      </if>
+      <if test="role != null and role != ''">
+        role = #{role},
+      </if>
+      <if test="tagIds != null and tagIds != ''">
+        tag_ids = #{tagIds},
+      </if>
+      <if test="region != null and region != ''">
+        region = #{region},
+      </if>
+      <if test="state != null and state != ''">
+        state = #{state},
+      </if>
+      <if test="birthday != null and birthday != ''">
+        birthday = #{birthday},
+      </if>
+      update_time = #{updateTime}
+    WHERE alumni_id = #{alumniId}
+  </update>
+
+  <select id="getAlumniList" resultType="com.alumni.back.Entity.Alumni">
+    SELECT
+      alumni_id as alumniId,
+      salutation,
+      first_name as firstName,
+      last_name as lastName,
+      chinese_name as chineseName,
+      email,
+      contact_number as contactNumber,
+      wechat_id as wechatId,
+      correspondence_address as correspondenceAddress,
+      current_location as currentLocation,
+      zoho_alumni_number as zohoAlumniNumber,
+      affiliation,
+      ycyw_schools_attended as ycywSchoolsAttended,
+      study_period_start as studyPeriodStart,
+      study_period_end as studyPeriodEnd,
+      last_school_day as lastSchoolDay,
+      year_left as yearLeft,
+      marital_status as maritalStatus,
+      show_year_left as showYearLeft,
+      show_tertiary_university as showTertiaryUniversity,
+      show_tertiary_major as showTertiaryMajor,
+      show_career_company as showCareerCompany,
+      show_job_title as showJobTitle,
+      show_industry as showIndustry,
+      show_country as showCountry,
+      password,
+      update_time as updateTime,
+      role,
+      tag_ids as tagIds,
+      region,
+      state,
+      birthday
+    FROM alumnus
+    <where>
+      <if test="alumniId != null and alumniId != ''">
+        AND alumni_id LIKE CONCAT('%', #{alumniId}, '%')
+      </if>
+      <if test="ycywSchoolsAttended != null and ycywSchoolsAttended != ''">
+        AND ycyw_schools_attended LIKE CONCAT('%', #{ycywSchoolsAttended}, '%')
+      </if>
+      <if test="chineseName != null and chineseName != ''">
+        AND chinese_name LIKE CONCAT('%', #{chineseName}, '%')
+      </if>
+      <if test="email != null and email != ''">
+        AND email LIKE CONCAT('%', #{email}, '%')
+      </if>
+      <if test="contactNumber != null and contactNumber != ''">
+        AND contact_number LIKE CONCAT('%', #{contactNumber}, '%')
+      </if>
+      <if test="tagIds != null and tagIds != ''">
+        AND tag_ids LIKE CONCAT('%', #{tagIds}, '%')
+      </if>
+      <if test="tagIdsList != null and tagIdsList.size() > 0">
+        AND (
+          <foreach collection="tagIdsList" item="tagId" separator=" OR ">
+            tag_ids LIKE CONCAT('%', #{tagId}, '%')
+          </foreach>
+        )
+      </if>
+      <!-- 权限为2的管理员可以看到所有校友 -->
+      <!-- 权限为1的管理员只能看到指定学校的校友 -->
+      <if test="permissionLevel != null and permissionLevel == 1">
+        <choose>
+          <when test="accessibleSchools != null and accessibleSchools != ''">
+            AND (
+              <foreach collection="accessibleSchools.split(',')" item="school" separator=" OR " open="" close="">
+                <if test="school != null and school != ''">
+                  ycyw_schools_attended LIKE CONCAT('%', #{school}, '%')
+                </if>
+              </foreach>
+            )
+          </when>
+          <otherwise>
+            <!-- 如果权限为1但没有指定可访问学校，设置为假条件，不返回任何数据 -->
+            AND 1=0
+          </otherwise>
+        </choose>
+      </if>
+      <!-- 权限为0的管理员不能看到任何校友信息 -->
+      <if test="permissionLevel != null and permissionLevel == 0">
+        AND 1=0
+      </if>
+    </where>
+    ORDER BY update_time DESC
+    LIMIT #{offset}, #{pageSize}
+  </select>
+
+  <select id="getAlumniDetailById" resultType="com.alumni.back.Entity.Alumni">
+    SELECT
+      alumni_id as alumniId,
+      salutation,
+      first_name as firstName,
+      last_name as lastName,
+      chinese_name as chineseName,
+      email,
+      contact_number as contactNumber,
+      wechat_id as wechatId,
+      correspondence_address as correspondenceAddress,
+      current_location as currentLocation,
+      zoho_alumni_number as zohoAlumniNumber,
+      affiliation,
+      ycyw_schools_attended as ycywSchoolsAttended,
+      study_period_start as studyPeriodStart,
+      study_period_end as studyPeriodEnd,
+      last_school_day as lastSchoolDay,
+      year_left as yearLeft,
+      marital_status as maritalStatus,
+      show_year_left as showYearLeft,
+      show_tertiary_university as showTertiaryUniversity,
+      show_tertiary_major as showTertiaryMajor,
+      show_career_company as showCareerCompany,
+      show_job_title as showJobTitle,
+      show_industry as showIndustry,
+      show_country as showCountry,
+      password,
+      update_time as updateTime,
+      role,
+      tag_ids as tagIds,
+      region,
+      state,
+      birthday
+    FROM alumnus
+    WHERE alumni_id = #{alumniId}
+  </select>
+
+  <update id="updatePasswordByEmail">
+    UPDATE alumnus SET password = #{password}, update_time = NOW() WHERE email = #{email}
+  </update>
+
+  <select id="getAlumniByEmail" resultType="com.alumni.back.Entity.Alumni">
+    SELECT alumni_id as alumniId, email, role FROM alumnus WHERE email = #{email}
+  </select>
+
+  <select id="getAlumniIdByEmail" resultType="map">
+    SELECT alumni_id, email FROM alumnus WHERE email = #{email}
+  </select>
+
+  <!-- 动态插入校友信息，避免password为null的问题 -->
+  <insert id="insertAlumni" parameterType="com.alumni.back.Entity.Alumni">
+    INSERT INTO alumnus
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      alumni_id,
+      salutation,
+      first_name,
+      last_name,
+      chinese_name,
+      email,
+      contact_number,
+      wechat_id,
+      correspondence_address,
+      current_location,
+      zoho_alumni_number,
+      affiliation,
+      ycyw_schools_attended,
+      study_period_start,
+      study_period_end,
+      last_school_day,
+      year_left,
+      marital_status,
+      show_year_left,
+      show_tertiary_university,
+      show_tertiary_major,
+      show_career_company,
+      show_job_title,
+      show_industry,
+      show_country,
+      <if test="password != null and password != ''">password,</if>
+      update_time,
+      role,
+      tag_ids,
+      region,
+      state,
+      birthday
+    </trim>
+    VALUES
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      #{alumniId},
+      #{salutation},
+      #{firstName},
+      #{lastName},
+      #{chineseName},
+      #{email},
+      #{contactNumber},
+      #{wechatId},
+      #{correspondenceAddress},
+      #{currentLocation},
+      #{zohoAlumniNumber},
+      #{affiliation},
+      #{ycywSchoolsAttended},
+      #{studyPeriodStart},
+      #{studyPeriodEnd},
+      #{lastSchoolDay},
+      #{yearLeft},
+      #{maritalStatus},
+      #{showYearLeft},
+      #{showTertiaryUniversity},
+      #{showTertiaryMajor},
+      #{showCareerCompany},
+      #{showJobTitle},
+      #{showIndustry},
+      #{showCountry},
+      <if test="password != null and password != ''">#{password},</if>
+      #{updateTime},
+      #{role},
+      #{tagIds},
+      #{region},
+      #{state},
+      #{birthday}
+    </trim>
+  </insert>
+
+  <select id="selectStateZeroAlumni" resultType="com.alumni.back.Entity.Alumni">
+    SELECT * FROM alumnus WHERE state = 0
+  </select>
+
+  <update id="updateAlumniStateById">
+    UPDATE alumnus SET state = #{state} WHERE alumni_id = #{alumniId}
+  </update>
+</mapper> 

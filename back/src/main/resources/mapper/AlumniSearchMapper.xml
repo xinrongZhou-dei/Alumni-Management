@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alumni.back.alumnisearch.AlumniSearchMapper">
+
+    <select id="searchAlumni" resultType="com.alumni.back.vo.AlumniSearchResultVO">
+        SELECT 
+            a.alumni_id AS alumniId,
+            a.chinese_name AS chineseName,
+            a.first_name AS firstName,
+            a.last_name AS lastName,
+            a.email AS email,
+            a.ycyw_schools_attended AS ycywSchoolsAttended,
+            a.year_left AS yearLeft,
+            t.university_college AS university,
+            t.major AS major,
+            c.company_organization AS company,
+            c.job_title AS jobTitle,
+            c.industry AS industry,
+            c.country_region AS countryRegion,
+            a.show_year_left AS showYearLeft,
+            a.show_tertiary_university AS showUniversity,
+            a.show_tertiary_major AS showMajor,
+            a.show_career_company AS showCompany,
+            a.show_job_title AS showJobTitle,
+            a.show_industry AS showIndustry,
+            a.show_country AS showCountryRegion
+        FROM alumnus a
+        LEFT JOIN (
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY alumni_id ORDER BY id) AS rn
+                FROM tertiary_information
+            ) t1 WHERE t1.rn = 1
+        ) t ON a.alumni_id = t.alumni_id
+        LEFT JOIN (
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY alumni_id ORDER BY id) AS rn
+                FROM carrer_information
+            ) c1 WHERE c1.rn = 1
+        ) c ON a.alumni_id = c.alumni_id
+        WHERE 1=1
+        <if test="req.name != null &amp;&amp; req.name != ''">
+            AND (a.chinese_name LIKE CONCAT('%', #{req.name}, '%')
+                 OR a.first_name LIKE CONCAT('%', #{req.name}, '%')
+                 OR a.last_name LIKE CONCAT('%', #{req.name}, '%'))
+        </if>
+        <if test="req.email != null &amp;&amp; req.email != ''">
+            AND a.email LIKE CONCAT('%', #{req.email}, '%')
+        </if>
+        <if test="req.ycywSchoolsAttended != null and req.ycywSchoolsAttended != ''">
+            AND (
+                a.ycyw_schools_attended REGEXP CONCAT('(', REPLACE(#{req.ycywSchoolsAttended}, ',', '|'), ')')
+            )
+        </if>
+        <if test="req.university != null &amp;&amp; req.university != ''">
+            AND t.university_college LIKE CONCAT('%', #{req.university}, '%')
+            AND a.show_tertiary_university = true
+        </if>
+        <if test="req.alumniInfoManagementPermission != null">
+            <if test="req.permissionSchool != null and req.permissionSchool != ''">
+                AND a.ycyw_schools_attended REGEXP CONCAT('(', REPLACE(#{req.permissionSchool}, ',', '|'), ')')
+            </if>
+            <if test="req.alumniInfoManagementPermission == 0">
+                AND 1=0
+            </if>
+        </if>
+        ORDER BY a.update_time DESC
+        LIMIT #{req.pageSize} OFFSET #{req.offset}
+    </select>
+
+    <select id="countAlumni" resultType="int">
+        SELECT COUNT(DISTINCT a.alumni_id)
+        FROM alumnus a
+        LEFT JOIN (
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY alumni_id ORDER BY id) AS rn
+                FROM tertiary_information
+            ) t1 WHERE t1.rn = 1
+        ) t ON a.alumni_id = t.alumni_id
+        LEFT JOIN (
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY alumni_id ORDER BY id) AS rn
+                FROM carrer_information
+            ) c1 WHERE c1.rn = 1
+        ) c ON a.alumni_id = c.alumni_id
+        WHERE 1=1
+        <if test="req.name != null &amp;&amp; req.name != ''">
+            AND (a.chinese_name LIKE CONCAT('%', #{req.name}, '%')
+                 OR a.first_name LIKE CONCAT('%', #{req.name}, '%')
+                 OR a.last_name LIKE CONCAT('%', #{req.name}, '%'))
+        </if>
+        <if test="req.email != null &amp;&amp; req.email != ''">
+            AND a.email LIKE CONCAT('%', #{req.email}, '%')
+        </if>
+        <if test="req.ycywSchoolsAttended != null and req.ycywSchoolsAttended != ''">
+            AND (
+                a.ycyw_schools_attended REGEXP CONCAT('(', REPLACE(#{req.ycywSchoolsAttended}, ',', '|'), ')')
+            )
+        </if>
+        <if test="req.university != null &amp;&amp; req.university != ''">
+            AND t.university_college LIKE CONCAT('%', #{req.university}, '%')
+            AND a.show_tertiary_university = true
+        </if>
+        <if test="req.alumniInfoManagementPermission != null">
+            <if test="req.permissionSchool != null and req.permissionSchool != ''">
+                AND a.ycyw_schools_attended REGEXP CONCAT('(', REPLACE(#{req.permissionSchool}, ',', '|'), ')')
+            </if>
+            <if test="req.alumniInfoManagementPermission == 0">
+                AND 1=0
+            </if>
+        </if>
+    </select>
+
+    <select id="searchAlumniByChapter" resultType="com.alumni.back.vo.AlumniSearchResultVO">
+        SELECT 
+            a.alumni_id AS alumniId,
+            a.chinese_name AS chineseName,
+            a.first_name AS firstName,
+            a.last_name AS lastName,
+            a.email AS email,
+            a.ycyw_schools_attended AS ycywSchoolsAttended,
+            a.year_left AS yearLeft,
+            t.university_college AS university,
+            t.major AS major,
+            c.company_organization AS company,
+            c.job_title AS jobTitle,
+            c.industry AS industry,
+            c.country_region AS countryRegion,
+            a.show_year_left AS showYearLeft,
+            a.show_tertiary_university AS showUniversity,
+            a.show_tertiary_major AS showMajor,
+            a.show_career_company AS showCompany,
+            a.show_job_title AS showJobTitle,
+            a.show_industry AS showIndustry,
+            a.show_country AS showCountryRegion
+        FROM alumnus a
+        LEFT JOIN (
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY alumni_id ORDER BY id) AS rn
+                FROM tertiary_information
+            ) t1 WHERE t1.rn = 1
+        ) t ON a.alumni_id = t.alumni_id
+        LEFT JOIN (
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY alumni_id ORDER BY id) AS rn
+                FROM carrer_information
+            ) c1 WHERE c1.rn = 1
+        ) c ON a.alumni_id = c.alumni_id
+        WHERE 1=1
+        <if test="req.chapterId != null">
+            AND FIND_IN_SET(#{req.chapterId}, a.tag_ids) > 0
+        </if>
+        <if test="req.name != null &amp;&amp; req.name != ''">
+            AND (a.chinese_name LIKE CONCAT('%', #{req.name}, '%')
+                 OR a.first_name LIKE CONCAT('%', #{req.name}, '%')
+                 OR a.last_name LIKE CONCAT('%', #{req.name}, '%'))
+        </if>
+        <if test="req.email != null &amp;&amp; req.email != ''">
+            AND a.email LIKE CONCAT('%', #{req.email}, '%')
+        </if>
+        <if test="req.ycywSchoolsAttended != null and req.ycywSchoolsAttended != ''">
+            AND a.ycyw_schools_attended LIKE CONCAT('%', #{req.ycywSchoolsAttended}, '%')
+        </if>
+        <if test="req.university != null &amp;&amp; req.university != ''">
+            AND t.university_college LIKE CONCAT('%', #{req.university}, '%')
+            AND a.show_tertiary_university = true
+        </if>
+        ORDER BY a.update_time DESC
+        LIMIT #{req.pageSize} OFFSET #{req.offset}
+    </select>
+
+    <select id="countAlumniByChapter" resultType="int">
+        SELECT COUNT(DISTINCT a.alumni_id)
+        FROM alumnus a
+        LEFT JOIN (
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY alumni_id ORDER BY id) AS rn
+                FROM tertiary_information
+            ) t1 WHERE t1.rn = 1
+        ) t ON a.alumni_id = t.alumni_id
+        LEFT JOIN (
+            SELECT * FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY alumni_id ORDER BY id) AS rn
+                FROM carrer_information
+            ) c1 WHERE c1.rn = 1
+        ) c ON a.alumni_id = c.alumni_id
+        WHERE 1=1
+        <if test="req.chapterId != null">
+            AND FIND_IN_SET(#{req.chapterId}, a.tag_ids) > 0
+        </if>
+        <if test="req.name != null &amp;&amp; req.name != ''">
+            AND (a.chinese_name LIKE CONCAT('%', #{req.name}, '%')
+                 OR a.first_name LIKE CONCAT('%', #{req.name}, '%')
+                 OR a.last_name LIKE CONCAT('%', #{req.name}, '%'))
+        </if>
+        <if test="req.email != null &amp;&amp; req.email != ''">
+            AND a.email LIKE CONCAT('%', #{req.email}, '%')
+        </if>
+        <if test="req.ycywSchoolsAttended != null and req.ycywSchoolsAttended != ''">
+            AND a.ycyw_schools_attended LIKE CONCAT('%', #{req.ycywSchoolsAttended}, '%')
+        </if>
+        <if test="req.university != null &amp;&amp; req.university != ''">
+            AND t.university_college LIKE CONCAT('%', #{req.university}, '%')
+            AND a.show_tertiary_university = true
+        </if>
+    </select>
+
+</mapper>

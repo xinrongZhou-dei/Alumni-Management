@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alumni.back.chapter.ChapterMapper">
+
+    <insert id="insert" parameterType="com.alumni.back.Entity.Chapter">
+        INSERT INTO chapter (tag_id, alumni_id, status, create_time, update_time)
+        VALUES (#{tagId}, #{alumniId}, #{status}, #{createTime}, #{updateTime})
+    </insert>
+
+    <select id="selectAll" resultType="com.alumni.back.Entity.Chapter">
+        SELECT c.tag_id, c.alumni_id, c.status, c.create_time, c.update_time, t.name AS branch_name, c.total
+        FROM chapter c
+        LEFT JOIN tag t ON c.tag_id = t.id
+        WHERE c.status = 'approved'
+        ORDER BY c.total DESC
+    </select>
+
+    <select id="selectMyChapters" resultType="com.alumni.back.Entity.Chapter">
+        SELECT c.tag_id, c.alumni_id, c.status, c.create_time, c.update_time, t.name AS branch_name, c.total
+        FROM chapter c
+        LEFT JOIN tag t ON c.tag_id = t.id
+        WHERE c.alumni_id = #{alumniId}
+        ORDER BY c.total DESC
+    </select>
+
+    <select id="selectReviewList" resultType="map">
+        SELECT c.tag_id, t.name AS branch_name, a.chinese_name AS creator_name, c.alumni_id, c.create_time, c.status, c.total
+        FROM chapter c
+        LEFT JOIN tag t ON c.tag_id = t.id
+        LEFT JOIN alumnus a ON c.alumni_id = a.alumni_id
+        ORDER BY c.create_time DESC
+    </select>
+
+    <update id="updateReviewStatus">
+        UPDATE chapter
+        SET status = #{param2}
+        WHERE tag_id IN
+        <foreach collection="param1" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="selectAlumnusTagIds" resultType="string">
+        SELECT tag_ids FROM alumnus WHERE alumni_id = #{alumniId}
+    </select>
+
+    <update id="updateAlumnusTagIds">
+        UPDATE alumnus SET tag_ids = #{tagIds} WHERE alumni_id = #{alumniId}
+    </update>
+
+    <select id="selectChaptersByTagIds" resultType="map">
+        SELECT tag_id, alumni_id FROM chapter WHERE tag_id IN
+        <foreach collection="list" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectAllWithMap" resultType="map">
+        SELECT c.tag_id, t.name AS branch_name, c.alumni_id, c.status, c.create_time, c.update_time, c.total
+        FROM chapter c
+        LEFT JOIN tag t ON c.tag_id = t.id
+        WHERE c.status = 'approved'
+        ORDER BY c.total DESC
+    </select>
+
+    <select id="selectHotChapters" resultType="map">
+        SELECT c.tag_id, t.name AS branch_name, c.alumni_id, c.status, c.create_time, c.update_time, c.total
+        FROM chapter c
+        LEFT JOIN tag t ON c.tag_id = t.id
+        WHERE c.status = 'approved'
+        ORDER BY c.total DESC
+        LIMIT 4
+    </select>
+
+    <update id="updateChapterTotal">
+        UPDATE chapter SET total = total + #{increment} WHERE tag_id = #{tagId}
+    </update>
+
+    <update id="initChapterTotal">
+        UPDATE chapter SET total = 0 WHERE tag_id = #{tagId}
+    </update>
+
+    <select id="selectByTagId" resultType="com.alumni.back.Entity.Chapter">
+        SELECT c.tag_id, c.alumni_id, c.status, c.create_time, c.update_time, t.name AS branch_name, c.total
+        FROM chapter c
+        LEFT JOIN tag t ON c.tag_id = t.id
+        WHERE c.tag_id = #{tagId}
+    </select>
+
+    <delete id="deleteByTagId" parameterType="java.lang.Integer">
+        DELETE FROM chapter WHERE tag_id = #{tagId}
+    </delete>
+
+    <update id="removeTagIdFromAllAlumni" parameterType="java.lang.Integer">
+        UPDATE alumnus
+        SET tag_ids = TRIM(BOTH ',' FROM REPLACE(CONCAT(',', tag_ids, ','), CONCAT(',', #{tagId}, ','), ','))
+        WHERE FIND_IN_SET(#{tagId}, tag_ids) > 0
+    </update>
+
+</mapper> 

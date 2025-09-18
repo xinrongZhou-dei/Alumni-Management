@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alumni.back.permission.PermissionMapper">
+
+    <select id="selectAdminList" resultType="com.alumni.back.vo.AdminInfoVo">
+        SELECT
+            adm.*,
+            alu.chinese_name,
+            alu.first_name,
+            alu.last_name,
+            alu.email
+        FROM
+            admin adm
+        LEFT JOIN
+            alumnus alu ON adm.id = alu.alumni_id
+        <where>
+            <if test="query != null and query != ''">
+                (alu.alumni_id LIKE CONCAT('%', #{query}, '%')
+                OR alu.chinese_name LIKE CONCAT('%', #{query}, '%')
+                OR alu.first_name LIKE CONCAT('%', #{query}, '%')
+                OR alu.last_name LIKE CONCAT('%', #{query}, '%'))
+            </if>
+        </where>
+        ORDER BY
+            adm.created_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countAdminList" resultType="java.lang.Integer">
+        SELECT
+            count(*)
+        FROM
+            admin adm
+        LEFT JOIN
+            alumnus alu ON adm.id = alu.alumni_id
+        <where>
+            <if test="query != null and query != ''">
+                (alu.alumni_id LIKE CONCAT('%', #{query}, '%')
+                OR alu.chinese_name LIKE CONCAT('%', #{query}, '%')
+                OR alu.first_name LIKE CONCAT('%', #{query}, '%')
+                OR alu.last_name LIKE CONCAT('%', #{query}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findAdminById" resultType="com.alumni.back.Entity.Admin">
+        SELECT * FROM admin WHERE id = #{id}
+    </select>
+
+    <select id="findAlumnusCountById" resultType="java.lang.Integer">
+        SELECT count(*) FROM alumnus WHERE alumni_id = #{id}
+    </select>
+
+    <insert id="insertAdmin" parameterType="com.alumni.back.Entity.Admin">
+        INSERT INTO admin (id, accessible_schools, alumni_info_management_permission, alumni_info_review_permission, chapter_review_permission, activity_management_permission, tag_management_permission, email_template_permission, data_analysis_permission, permission_management_permission, campus_visit_record_permission)
+        VALUES (#{id}, #{accessibleSchools}, #{alumniInfoManagementPermission}, #{alumniInfoReviewPermission}, #{chapterReviewPermission}, #{activityManagementPermission}, #{tagManagementPermission}, #{emailTemplatePermission}, #{dataAnalysisPermission}, #{permissionManagementPermission}, #{campusVisitRecordPermission})
+    </insert>
+
+    <update id="updateAdmin" parameterType="com.alumni.back.Entity.Admin">
+        UPDATE admin
+        SET
+            accessible_schools = #{accessibleSchools},
+            alumni_info_management_permission = #{alumniInfoManagementPermission},
+            alumni_info_review_permission = #{alumniInfoReviewPermission},
+            chapter_review_permission = #{chapterReviewPermission},
+            activity_management_permission = #{activityManagementPermission},
+            tag_management_permission = #{tagManagementPermission},
+            email_template_permission = #{emailTemplatePermission},
+            data_analysis_permission = #{dataAnalysisPermission},
+            permission_management_permission = #{permissionManagementPermission},
+            campus_visit_record_permission = #{campusVisitRecordPermission}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteAdminById">
+        DELETE FROM admin WHERE id = #{id}
+    </delete>
+
+    <insert id="insertAlumnus" parameterType="com.alumni.back.Entity.Alumni">
+        INSERT INTO alumnus (alumni_id, email, role)
+        VALUES (#{alumniId}, #{email}, #{role})
+    </insert>
+
+    <select id="findAlumnusCountByEmail" resultType="java.lang.Integer">
+        SELECT count(*) FROM alumnus WHERE email = #{email}
+    </select>
+</mapper> 

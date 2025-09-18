@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alumni.back.activity.ActivityMapper">
+
+    <select id="selectActivityList" resultType="com.alumni.back.Entity.Activity">
+        SELECT a.*, 
+               r.wechat_id_required, 
+               r.address_required, 
+               r.current_location_required, 
+               r.companions_required, 
+               r.payment_proof_required
+        FROM activity a
+        LEFT JOIN activity_required_fields r ON a.uuid = r.activity_uuid
+        ORDER BY a.created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countActivity" resultType="int">
+        SELECT COUNT(*) FROM activity
+    </select>
+
+    <delete id="deleteActivity">
+        DELETE FROM activity WHERE uuid = #{uuid}
+    </delete>
+
+    <select id="selectActivityByUuid" resultType="com.alumni.back.Entity.Activity">
+        SELECT a.*, 
+               r.wechat_id_required, 
+               r.address_required, 
+               r.current_location_required, 
+               r.companions_required, 
+               r.payment_proof_required
+        FROM activity a
+        LEFT JOIN activity_required_fields r ON a.uuid = r.activity_uuid
+        WHERE a.uuid = #{uuid}
+    </select>
+
+    <update id="updateActivity">
+        UPDATE activity
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="activityDate != null">activity_date = #{activityDate},</if>
+            <if test="signupStart != null">signup_start = #{signupStart},</if>
+            <if test="signupEnd != null">signup_end = #{signupEnd},</if>
+            <if test="detail != null and detail != ''">detail = #{detail},</if>
+            <if test="coverUrl != null and coverUrl != ''">cover_url = #{coverUrl},</if>
+            <if test="signupTotal != null">signup_total = #{signupTotal},</if>
+            <if test="signupActual != null">signup_actual = #{signupActual},</if>
+            <if test="link != null and link != ''">link = #{link},</if>
+            <if test="qrcodeUrl != null and qrcodeUrl != ''">qrcode_url = #{qrcodeUrl},</if>
+            <if test="venue != null and venue != ''">venue = #{venue},</if>
+            updated_at = NOW()
+        </set>
+        WHERE uuid = #{uuid}
+    </update>
+
+    <update id="updateActivityRequiredFields">
+        UPDATE activity_required_fields
+        SET wechat_id_required = #{wechatIdRequired},
+            address_required = #{addressRequired},
+            current_location_required = #{currentLocationRequired},
+            companions_required = #{companionsRequired},
+            payment_proof_required = #{paymentProofRequired},
+            updated_at = NOW()
+        WHERE activity_uuid = #{uuid}
+    </update>
+
+    <select id="countActivityRequiredFields" resultType="int">
+        SELECT COUNT(*) FROM activity_required_fields WHERE activity_uuid = #{uuid}
+    </select>
+
+    <insert id="insertActivityRequiredFields">
+        INSERT INTO activity_required_fields (
+            activity_uuid,
+            wechat_id_required,
+            address_required,
+            current_location_required,
+            companions_required,
+            payment_proof_required,
+            updated_at
+        ) VALUES (
+            #{uuid},
+            #{wechatIdRequired},
+            #{addressRequired},
+            #{currentLocationRequired},
+            #{companionsRequired},
+            #{paymentProofRequired},
+            NOW()
+        )
+    </insert>
+
+    <insert id="insertActivity" parameterType="com.alumni.back.Entity.Activity">
+        INSERT INTO activity (
+            uuid, name, activity_date, signup_start, signup_end, detail, cover_url, link, qrcode_url, created_at, updated_at, signup_total, signup_actual, venue
+        ) VALUES (
+            #{uuid}, #{name}, #{activityDate}, #{signupStart}, #{signupEnd}, #{detail}, #{coverUrl}, #{link}, #{qrcodeUrl}, NOW(), NOW(), #{signupTotal}, #{signupActual}, #{venue}
+        )
+    </insert>
+
+    <delete id="deleteActivityRequiredFields">
+        DELETE FROM activity_required_fields WHERE activity_uuid = #{uuid}
+    </delete>
+    <delete id="deleteActivityRegistrations">
+        DELETE FROM activity_registration WHERE activity_uuid = #{uuid}
+    </delete>
+
+    <!-- 更新活动已报名人数 -->
+    <update id="updateSignupActual">
+        UPDATE activity 
+        SET signup_actual = #{signupActual}, updated_at = NOW()
+        WHERE uuid = #{uuid}
+    </update>
+
+    <!-- 乐观锁递减剩余名额 -->
+    <update id="decrementRemainIfAvailable">
+        UPDATE activity
+        SET signup_total = signup_total - 1
+        WHERE uuid = #{uuid} AND signup_total > 0
+    </update>
+
+    <!-- 乐观锁条件更新报名人数 -->
+    <update id="incrementSignupActualIfAvailable">
+        UPDATE activity
+        SET signup_actual = signup_actual + 1, updated_at = NOW()
+        WHERE uuid = #{uuid} AND signup_actual &lt; signup_total
+    </update>
+
+    <select id="batchSelectFields" resultType="map">
+        SELECT
+        <foreach collection="fields" item="field" separator=",">
+            ${field}
+        </foreach>
+        , uuid
+        FROM activity
+        WHERE uuid IN
+        <foreach collection="uuids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+</mapper> 
